@@ -1,0 +1,55 @@
+######################################################
+# Name: apache.sls
+#
+# Description: install apache
+#
+# verified OS: Ubuntu 14.04, CentOS 6.5
+#
+# usage:
+# salt state.sls apache
+#
+######################################################
+# set up the variables
+{% set apache_html = salt['pillar.get']('apache:html', '/var/www/html') %}
+
+######################################################
+# setup os specific references
+#
+######################################################
+{% if grains['os_family'] == 'RedHat' %}
+  {% set apache = 'httpd' %}
+  {% set apache_user = 'apache' %}
+  {% set apache_group = 'apache' %}
+  {% set page = '/var/www/index.html' %}
+{% elif grains['os_family'] == 'Suse' %}
+  {% set apache = 'apache2' %}
+  {% set apache_user = 'www-data' %}
+  {% set apache_group = 'www-data' %}
+  {% set page = '/srv/www/htdocs/index.html' %}
+{% endif %}
+
+######################################################
+# install apache webserver and start service
+#
+######################################################
+#install apache
+apache-pkg:
+  pkg:
+   - installed
+   - name: {{ apache }}
+  service:
+    - running
+    - name: {{ apache }}
+    - require:
+      - pkg: apache-pkg
+
+{{ page }}:
+  file:
+    - managed
+    - source: salt://apache/index.html
+    - template: jinja
+    - makedirs: True
+    - require:
+      - pkg: {{ apache }}
+    - watch_in:
+      - service: {{ apache }}

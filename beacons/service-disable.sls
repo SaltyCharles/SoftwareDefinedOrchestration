@@ -1,0 +1,2 @@
+service:
+  beacon.absent
